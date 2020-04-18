@@ -1,8 +1,9 @@
 import axios from 'axios';
-require('dotenv').config();
 
 const MIN_RATING = 6.5;
 const MIN_VOTES = 1000;
+const ROOT_FOLDER_PATH = '/movies/';
+const LIBRARY_NAME = 'movie';
 
 export const run = async () => {
   const tautApi = process.env.TAUTULLI_API_URL;
@@ -11,7 +12,7 @@ export const run = async () => {
   const tasteDiveKey = process.env.TASTE_DIVE_API_KEY;
   const radarrApi = process.env.RADARR_API_URL;
   const radarrKey = process.env.RADARR_API_KEY;
-  const isDryRun = process.env.DRY_RUN;
+  const isDryRun = process.env.DRY_RUN === 'true';
 
   try {
     console.log(`${isDryRun ? 'running dry run.. nothing will be added to radarr' : 'running for real...'}`);
@@ -55,8 +56,8 @@ export const run = async () => {
     };
 
     const existingLibs = await axios.get(`${tautApi}?apikey=${tautKey}&cmd=get_libraries`);
-    const movieLibs = existingLibs.data.response.data.filter(
-      (d: any) => d.section_name.toLowerCase() === 'movies' || d.section_name.toLowerCase() === 'movie',
+    const movieLibs = existingLibs.data.response.data.filter((d: any) =>
+      d.section_name.toLowerCase().includes(LIBRARY_NAME.toLowerCase()),
     );
     if (movieLibs.length > 1) {
       throw new Error('could not find target library matching the name {movies} or {movie}');
@@ -66,6 +67,12 @@ export const run = async () => {
     const addedMovies: any = [];
     for (const similarItem of d.similar) {
       const lol = await axios.get(`${radarrApi}/movie/lookup?apikey=${radarrKey}&term=${encodeURI(similarItem)}`);
+
+      if (lol.data.length === 0) {
+        console.log(`could not find ${similarItem}.. skipping...`);
+        break;
+      }
+
       const firstMatch = lol.data[0];
 
       // ensure it doesnt exist in plex (and just not in radarr)
@@ -78,7 +85,7 @@ export const run = async () => {
         const payload = {
           ...firstMatch,
 
-          rootFolderPath: '/movies/', // fetch this
+          rootFolderPath: ROOT_FOLDER_PATH, // fetch this?
           monitored: true,
           profileId: 6,
           qualityProfileId: 6,
