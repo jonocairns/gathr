@@ -18,12 +18,8 @@ export const run = async () => {
     console.log('fetching most popular movies...');
 
     const data = await axios.get(`${tautApi}?apikey=${tautKey}&cmd=get_home_stats`);
-    // const data = await axios.get(
-    //   `${tautApi}?apikey=${tautKey}&cmd=get_library_media_info&order_column=play_count&section_id=10`,
-    // );
 
     const {rows} = data.data.response.data[0];
-    // const rows = data.data.response.data.data;
 
     console.log('fetching similar movies to most popular movies...');
     const resp = await axios.get(
