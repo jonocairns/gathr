@@ -1,25 +1,31 @@
-import React from 'react';
-import logo from './logo.svg';
+import React, {useEffect, useState} from 'react';
 import './App.css';
+import axois from 'axios';
+
+const apiBase = process.env.REACT_APP_LOCAL_API;
 
 function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+  const [isLoading, setLoading] = useState(true);
+  const [data, setData] = useState();
+
+  useEffect(() => {
+    const getConfig = async () => {
+      const result = await axois.get(`${apiBase}/config`);
+
+      console.log(result.data);
+      setData(result.data);
+      setLoading(false);
+    };
+
+    getConfig();
+  }, []);
+
+  return !isLoading ? (
+    <div>
+      <code>{JSON.stringify(data)}</code>
     </div>
+  ) : (
+    <h2>loading...</h2>
   );
 }
 
