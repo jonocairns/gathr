@@ -70,12 +70,13 @@ export const run = async (movies?: string[]) => {
     const target = movieLibs[0];
 
     const addedMovies: any = [];
-    for (const similarItem of d.similar) {
+
+    const promises = d.similar.map(async (similarItem: any) => {
       const lol = await axios.get(`${radarrApi}/movie/lookup?apikey=${radarrKey}&term=${encodeURI(similarItem)}`);
 
       if (lol.data.length === 0) {
         console.log(`could not find ${similarItem}.. skipping...`);
-        break;
+        return;
       }
 
       const firstMatch = lol.data[0];
@@ -122,7 +123,9 @@ export const run = async (movies?: string[]) => {
           console.log(`dry run enabled... this is where we would be adding ${firstMatch.title}`);
         }
       }
-    }
+    });
+
+    await Promise.all(promises);
 
     if (addedMovies.length > 0 && !isDryRun) {
       console.log('triggering movies search for added/updated movies');
