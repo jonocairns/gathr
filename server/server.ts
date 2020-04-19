@@ -1,5 +1,11 @@
 import * as Hapi from '@hapi/hapi';
 import {run} from './runner';
+import {badRequest} from '@hapi/boom';
+require('dotenv').config();
+
+interface MoviesRequest {
+  movies: string[];
+}
 
 const init = async () => {
   const server = new Hapi.Server({
@@ -14,9 +20,24 @@ const init = async () => {
 
   server.route({
     method: 'GET',
-    path: '/config',
+    path: '/similar',
     handler: async (request, h) => {
       await run();
+    },
+  });
+
+  server.route({
+    method: 'POST',
+    path: '/similar',
+    handler: async (request, h) => {
+      const payload = request.payload as MoviesRequest;
+      const movies = payload.movies;
+
+      if (movies) {
+        return await run(movies);
+      } else {
+        return badRequest('please supply an object with movies');
+      }
     },
   });
 

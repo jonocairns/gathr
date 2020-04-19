@@ -5,7 +5,7 @@ const MIN_VOTES = 1000;
 const ROOT_FOLDER_PATH = '/movies/';
 const LIBRARY_NAME = 'movie';
 
-export const run = async () => {
+export const run = async (movies?: string[]) => {
   const tautApi = process.env.TAUTULLI_API_URL;
   const tautKey = process.env.TAUTULLI_API_KEY;
   const tasteDiveApi = process.env.TASTE_DIVE_API_URL;
@@ -16,17 +16,22 @@ export const run = async () => {
 
   try {
     console.log(`${isDryRun ? 'running dry run.. nothing will be added to radarr' : 'running for real...'}`);
-    console.log('fetching most popular movies...');
 
-    const data = await axios.get(`${tautApi}?apikey=${tautKey}&cmd=get_home_stats`);
+    let moviesToSearch = [];
+    if (movies && movies.length > 0) {
+      console.log('movies provided...');
+      moviesToSearch = movies;
+    } else {
+      console.log('fetching most popular movies...');
+      const data = await axios.get(`${tautApi}?apikey=${tautKey}&cmd=get_home_stats`);
+      const {rows} = data.data.response.data[0];
+      moviesToSearch = rows.map((r: any) => r.title);
+    }
+    console.log(`looking movies similar to ${moviesToSearch.join(', ')}`);
 
-    const {rows} = data.data.response.data[0];
-
-    console.log('fetching similar movies to most popular movies...');
+    console.log('fetching similar movies...');
     const resp = await axios.get(
-      `${tasteDiveApi}/similar?q=${encodeURI(
-        rows.map((r: any) => r.title).join(','),
-      )}&k=${tasteDiveKey}&type=movies&info=1&limit=100`,
+      `${tasteDiveApi}/similar?q=${encodeURI(moviesToSearch.join(','))}&k=${tasteDiveKey}&type=movies&info=1&limit=100`,
     );
 
     const d = {
@@ -77,7 +82,9 @@ export const run = async () => {
 
       // ensure it doesnt exist in plex (and just not in radarr)
       const searchIfExistsInPlex = await axios.get(
-        `${tautApi}?apikey=${tautKey}&cmd=get_library_media_info&section_id=${target.section_id}&search=${firstMatch.title}`,
+        `${tautApi}?apikey=${tautKey}&cmd=get_library_media_info&section_id=${target.section_id}&search=${encodeURI(
+          firstMatch.title,
+        )}`,
       );
       const existsInPlex = searchIfExistsInPlex.data.response.data.data.length > 0;
 

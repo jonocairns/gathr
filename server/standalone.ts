@@ -1,4 +1,6 @@
 import {run} from './runner';
 require('dotenv').config();
 
-run();
+var movies = process.argv.slice(2);
+
+run(movies);
